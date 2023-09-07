@@ -213,15 +213,86 @@ impl std::error::Error for SetRecorderError {
 
 /// Returns a reference to the recorder.
 ///
-/// If a recorder has not been set, a no-op implementation is returned.
-pub fn recorder() -> &'static dyn Recorder {
-    static NOOP: NoopRecorder = NoopRecorder;
-    try_recorder().unwrap_or(&NOOP)
-}
-
-/// Returns a reference to the recorder.
-///
 /// If a recorder has not been set, returns `None`.
 pub fn try_recorder() -> Option<&'static dyn Recorder> {
     RECORDER.try_load()
+}
+
+impl<T> Recorder for Option<T>
+where
+    T: Recorder,
+{
+    fn describe_counter(&self, key: KeyName, unit: Option<Unit>, description: SharedString) {
+        if let Some(some) = self {
+            some.describe_counter(key, unit, description)
+        } else {
+            NoopRecorder.describe_counter(key, unit, description)
+        }
+    }
+
+    fn describe_gauge(&self, key: KeyName, unit: Option<Unit>, description: SharedString) {
+        if let Some(some) = self {
+            some.describe_gauge(key, unit, description)
+        } else {
+            NoopRecorder.describe_gauge(key, unit, description)
+        }
+    }
+
+    fn describe_histogram(&self, key: KeyName, unit: Option<Unit>, description: SharedString) {
+        if let Some(some) = self {
+            some.describe_histogram(key, unit, description)
+        } else {
+            NoopRecorder.describe_histogram(key, unit, description)
+        }
+    }
+
+    fn register_counter(&self, key: &Key, metadata: &Metadata<'_>) -> Counter {
+        if let Some(some) = self {
+            some.register_counter(key, metadata)
+        } else {
+            NoopRecorder.register_counter(key, metadata)
+        }
+    }
+
+    fn register_gauge(&self, key: &Key, metadata: &Metadata<'_>) -> Gauge {
+        if let Some(some) = self {
+            some.register_gauge(key, metadata)
+        } else {
+            NoopRecorder.register_gauge(key, metadata)
+        }
+    }
+
+    fn register_histogram(&self, key: &Key, metadata: &Metadata<'_>) -> Histogram {
+        if let Some(some) = self {
+            some.register_histogram(key, metadata)
+        } else {
+            NoopRecorder.register_histogram(key, metadata)
+        }
+    }
+}
+
+impl<'a> Recorder for &'a dyn Recorder {
+    fn describe_counter(&self, key: KeyName, unit: Option<Unit>, description: SharedString) {
+        <dyn Recorder as Recorder>::describe_counter(self, key, unit, description)
+    }
+
+    fn describe_gauge(&self, key: KeyName, unit: Option<Unit>, description: SharedString) {
+        <dyn Recorder as Recorder>::describe_gauge(self, key, unit, description)
+    }
+
+    fn describe_histogram(&self, key: KeyName, unit: Option<Unit>, description: SharedString) {
+        <dyn Recorder as Recorder>::describe_histogram(self, key, unit, description)
+    }
+
+    fn register_counter(&self, key: &Key, metadata: &Metadata<'_>) -> Counter {
+        <dyn Recorder as Recorder>::register_counter(self, key, metadata)
+    }
+
+    fn register_gauge(&self, key: &Key, metadata: &Metadata<'_>) -> Gauge {
+        <dyn Recorder as Recorder>::register_gauge(self, key, metadata)
+    }
+
+    fn register_histogram(&self, key: &Key, metadata: &Metadata<'_>) -> Histogram {
+        <dyn Recorder as Recorder>::register_histogram(self, key, metadata)
+    }
 }

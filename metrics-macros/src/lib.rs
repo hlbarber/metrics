@@ -242,9 +242,7 @@ fn get_describe_code(
     quote! {
         {
             // Only do this work if there's a recorder installed.
-            if let Some(recorder) = ::metrics::try_recorder() {
-                recorder.#describe_ident(#name.into(), #unit, #description.into());
-            }
+            ::metrics::try_recorder().#describe_ident(#name.into(), #unit, #description.into());
         }
     }
 }
@@ -277,12 +275,9 @@ where
             quote! {
                 {
                     #statics
-                    // Only do this work if there's a recorder installed.
-                    if let Some(recorder) = ::metrics::try_recorder() {
-                        #locals
-                        let handle = recorder.#register_ident(#metric_key, &METADATA);
-                        handle.#op_ident(#op_value);
-                    }
+                    #locals
+                    let handle = ::metrics::try_recorder().#register_ident(#metric_key, &METADATA);
+                    handle.#op_ident(#op_value);
                 }
             }
         }
@@ -292,7 +287,7 @@ where
                 {
                     #statics
                     #locals
-                    ::metrics::recorder().#register_ident(#metric_key, &METADATA)
+                    ::metrics::try_recorder().#register_ident(#metric_key, &METADATA)
                 }
             }
         }
